@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nguyễn Hải Anh — AI Chat Studio</title>
+  <meta name="description" content="Ứng dụng Web Chat AI phong cách B2B SaaS hiện đại được xây dựng bởi Nguyễn Hải Anh, tích hợp mô hình Gemini AI.">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            surface: {
+              50: '#F8F9FA',
+              100: '#F1F3F5',
+              200: '#E9ECEF',
+              300: '#DEE2E6',
+              400: '#CED4DA',
+              500: '#ADB5BD',
+              600: '#6C757D',
+              700: '#495057',
+              800: '#343A40',
+              900: '#212529',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Highlight.js for Code Highlighting (GitHub Light Theme) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Marked.js for Markdown & DOMPurify for security -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS Tokens & Animations -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-[#F8F9FB] text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
+
+  <!-- Author Background Layer (Clean Subtle Light Watermark) -->
+  <div id="authorBgLayer" class="author-background-layer"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container flex flex-col h-screen overflow-hidden">
+    
+    <!-- Top Navigation Header -->
+    <header class="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between z-20 flex-shrink-0">
+      
+      <!-- Brand & Author Identity -->
+      <div class="flex items-center gap-3.5">
+        <!-- Author Avatar Thumbnail -->
+        <div class="relative group cursor-pointer" id="authorAvatarTrigger" title="Tác giả: Nguyễn Hải Anh">
+          <img src="/static/background_author.png" alt="Nguyễn Hải Anh" class="w-9 h-9 rounded-full object-cover border border-slate-300 shadow-xs hover:border-slate-400 transition-all">
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-semibold text-slate-900 text-sm md:text-base leading-none tracking-tight">Hải Anh Studio</h1>
+            <span class="text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">AI Assistant</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5 font-normal">Tác giả: <span class="font-medium text-slate-700">Nguyễn Hải Anh</span></p>
+        </div>
+      </div>
+
+      <!-- Center Status / Model Pill -->
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs text-slate-600">
+        <span class="pulsing-dot"></span>
+        <span class="font-medium text-slate-700">Gemini 3.5 Flash Active</span>
+        <span class="text-slate-300">|</span>
+        <span class="text-slate-500">B2B SaaS Light Engine</span>
+      </div>
+
+      <!-- Right Header Actions -->
+      <div class="flex items-center gap-2">
+        <!-- Background Opacity Quick Adjust -->
+        <div class="hidden md:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-600" title="Độ hiển thị ảnh nền tác giả">
+          <i data-lucide="image" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span class="text-[11px] font-medium text-slate-600">Nền tác giả:</span>
+          <input type="range" id="bgOpacitySlider" min="0" max="25" value="7" class="w-16 h-1 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-slate-700">
+          <span id="bgOpacityLabel" class="text-[11px] font-mono text-slate-500 w-6">7%</span>
+        </div>
+
+        <!-- Export Chat -->
+        <button id="exportChatBtn" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-all text-xs font-medium inline-flex items-center gap-1.5" title="Xuất nội dung hội thoại">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span class="hidden lg:inline">Xuất hội thoại</span>
+        </button>
+
+        <!-- New Chat Button -->
+        <button id="newChatBtn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow-xs transition-all flex items-center gap-1.5">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Cuộc trò chuyện mới</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+      <!-- Left Bento Sidebar (Desktop) -->
+      <aside class="hidden md:flex flex-col w-80 lg:w-88 border-r border-slate-200 bg-white/95 p-4 overflow-y-auto space-y-4 flex-shrink-0 z-10">
+        
+        <!-- Author Profile Bento Card -->
+        <div class="bento-card p-4 bg-gradient-to-b from-white to-slate-50">
+          <div class="flex items-center gap-3.5 mb-3">
+            <img src="/static/background_author.png" alt="Tác giả Nguyễn Hải Anh" class="w-12 h-12 rounded-full object-cover border-2 border-slate-200 shadow-xs">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h3 class="font-semibold text-slate-900 text-sm">Nguyễn Hải Anh</h3>
+                <span title="Tác giả được xác thực" class="text-blue-500">
+                  <i data-lucide="badge-check" class="w-4 h-4"></i>
+                </span>
+              </div>
+              <p class="text-xs text-slate-500">Full-stack Engineer & Creator</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-100">
+            Ứng dụng trò chuyện AI được thiết kế theo tiêu chuẩn <strong>B2B SaaS Minimalist</strong> (Linear/Notion). Nền tảng Google Gemini API thế hệ mới.
+          </p>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Phiên bản v1.0.0</span>
+            <span class="inline-flex items-center gap-1 text-emerald-600 font-medium">
+              <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Sẵn sàng
+            </span>
+          </div>
+        </div>
+
+        <!-- Bento Capabilities Section -->
+        <div>
+          <div class="text-[11px] font-semibold tracking-wider uppercase text-slate-400 px-1 mb-2">Tính năng nhanh (Bento)</div>
+          <div class="grid grid-cols-1 gap-2">
+            
+            <div class="bento-card bento-card-interactive p-3 flex items-start gap-2.5 quick-feature-item" data-prompt="Viết và giải thích đoạn code Python để tối ưu thuật toán tìm kiếm nhị phân (Binary Search).">
+              <div class="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5 border border-blue-100">
+                <i data-lucide="code" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-slate-800">Lập trình & Debug</div>
+                <div class="text-[11px] text-slate-500 leading-snug">Viết mã sạch, tìm lỗi cú pháp và thuật toán</div>
+              </div>
+            </div>
+
+            <div class="bento-card bento-card-interactive p-3 flex items-start gap-2.5 quick-feature-item" data-prompt="Hãy tóm tắt ngắn gọn các nguyên lý thiết kế Light Mode B2B SaaS hiện đại như Notion hay Linear.">
+              <div class="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5 border border-emerald-100">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-slate-800">Tư duy UI/UX & Sản phẩm</div>
+                <div class="text-[11px] text-slate-500 leading-snug">Tư vấn giao diện, luồng người dùng và thiết kế</div>
+              </div>
+            </div>
+
+            <div class="bento-card bento-card-interactive p-3 flex items-start gap-2.5 quick-feature-item" data-prompt="Soạn thảo một email chuyên nghiệp gửi đối tác kinh doanh thông báo về tiến độ dự án.">
+              <div class="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-100">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-slate-800">Soạn thảo văn bản</div>
+                <div class="text-[11px] text-slate-500 leading-snug">Email công việc, tài liệu kỹ thuật, báo cáo</div>
+              </div>
+            </div>
+
+            <div class="bento-card bento-card-interactive p-3 flex items-start gap-2.5 quick-feature-item" data-prompt="Hãy phân tích ưu nhược điểm giữa kiến trúc Microservices và Monolith trong hệ thống SaaS.">
+              <div class="w-7 h-7 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-100">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-slate-800">Phân tích kiến trúc</div>
+                <div class="text-[11px] text-slate-500 leading-snug">Đánh giá hệ thống và công nghệ chuyên sâu</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- System Architecture Pill Bento -->
+        <div class="bento-card p-3 text-xs bg-slate-50/70 border-slate-200 mt-auto">
+          <div class="flex items-center justify-between text-slate-600 mb-1.5">
+            <span class="font-medium">Backend Engine</span>
+            <span class="font-mono text-[11px] text-slate-500">FastAPI (Python)</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-600 mb-1.5">
+            <span class="font-medium">Phản hồi</span>
+            <span class="font-mono text-[11px] text-slate-500">SSE Streamed</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-600">
+            <span class="font-medium">Giao diện</span>
+            <span class="font-mono text-[11px] text-slate-500">Light Minimalist</span>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- Center Chat Area -->
+      <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+
+        <!-- Messages Container -->
+        <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
+          
+          <!-- Empty State / Welcome Screen -->
+          <div id="welcomeScreen" class="max-w-2xl mx-auto my-8 text-center">
+            
+            <div class="inline-flex p-3 rounded-2xl bg-white border border-slate-200 shadow-sm mb-4">
+              <img src="/static/background_author.png" alt="Author Avatar" class="w-16 h-16 rounded-full object-cover">
+            </div>
+
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight mb-2">Xin chào! Tôi có thể giúp gì cho bạn?</h2>
+            <p class="text-sm text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
+              Trợ lý AI đa năng được tạo bởi <strong>Nguyễn Hải Anh</strong>. Đặt câu hỏi về lập trình, giải quyết bài toán, viết lách hoặc phân tích dữ liệu.
+            </p>
+
+            <!-- Bento Prompt Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              
+              <div class="bento-card bento-card-interactive p-4 quick-prompt-card" data-prompt="Giải thích cách hoạt động của WebSocket so với HTTP Polling trong ứng dụng chat thực tế.">
+                <div class="flex items-center justify-between text-slate-900 font-semibold text-xs mb-1">
+                  <span>WebSocket vs HTTP Polling</span>
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                </div>
+                <p class="text-[11px] text-slate-500">So sánh cơ chế truyền dữ liệu real-time hiện đại</p>
+              </div>
+
+              <div class="bento-card bento-card-interactive p-4 quick-prompt-card" data-prompt="Viết một đoạn code Python sử dụng thư viện asyncio để tải đồng thời nhiều URLs.">
+                <div class="flex items-center justify-between text-slate-900 font-semibold text-xs mb-1">
+                  <span>Asyncio Python Concurrent</span>
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                </div>
+                <p class="text-[11px] text-slate-500">Ví dụ code mẫu kèm giải thích từng dòng lệnh</p>
+              </div>
+
+              <div class="bento-card bento-card-interactive p-4 quick-prompt-card" data-prompt="Gợi ý kế hoạch 30 ngày tự học và làm chủ lập trình Full-stack với FastAPI và Vue/React.">
+                <div class="flex items-center justify-between text-slate-900 font-semibold text-xs mb-1">
+                  <span>Lộ trình học Full-stack</span>
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                </div>
+                <p class="text-[11px] text-slate-500">Kế hoạch chi tiết theo từng tuần có thực hành</p>
+              </div>
+
+              <div class="bento-card bento-card-interactive p-4 quick-prompt-card" data-prompt="Viết một hàm Regex bằng JavaScript để kiểm tra email hợp lệ theo chuẩn RFC 5322.">
+                <div class="flex items-center justify-between text-slate-900 font-semibold text-xs mb-1">
+                  <span>Validate Email Regex</span>
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                </div>
+                <p class="text-[11px] text-slate-500">Biểu thức chính quy chính xác kèm test cases</p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Dynamic Chat Message Thread will be inserted here -->
+
+        </div>
+
+        <!-- Input Bar (Notion / Linear Floating Minimalist Dock) -->
+        <div class="p-4 md:px-8 pb-5 flex-shrink-0 z-10">
+          <div class="max-w-3xl mx-auto">
+            
+            <form id="chatForm" class="bento-card p-2.5 bg-white border border-slate-300 focus-within:border-slate-500 focus-within:shadow-md transition-all">
+              
+              <div class="relative flex items-end gap-2">
+                <!-- Textarea -->
+                <textarea 
+                  id="messageInput" 
+                  rows="1" 
+                  placeholder="Nhập câu hỏi của bạn tại đây... (Nhấn Enter để gửi, Shift + Enter để xuống dòng)"
+                  class="w-full resize-none max-h-36 py-1.5 px-2 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none leading-relaxed"
+                ></textarea>
+
+                <!-- Send Button -->
+                <button 
+                  type="submit" 
+                  id="sendBtn" 
+                  class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white flex-shrink-0 transition-all shadow-xs"
+                  title="Gửi tin nhắn"
+                >
+                  <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Input Footer Tools -->
+              <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-1">
+                <div class="flex items-center gap-3">
+                  <span class="hidden sm:inline">Phím tắt: <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px] text-slate-600">Enter</kbd> gửi • <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px] text-slate-600">Shift + Enter</kbd> xuống dòng</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 text-slate-500">
+                  <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>
+                  <span>Tác giả: <strong>Nguyễn Hải Anh</strong></span>
+                </div>
+              </div>
+
+            </form>
+
+            <div class="text-center mt-2 text-[10px] text-slate-400">
+              AI có thể mắc lỗi. Vui lòng kiểm tra lại thông tin quan trọng. • Thiết kế phong cách SaaS B2B Light Mode
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- Client-side Logic -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
